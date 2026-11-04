@@ -1,121 +1,135 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
+type Song = {
+  title: string
+  info: string
+  begin: string
+}
+
+const DATA_URL = 'https://kalz2q.github.io/gakufu006/'
+
+const getAudioUrl = (title: string) =>
+  `${DATA_URL}${encodeURIComponent(title)}.mp3`
+
+const getScoreUrl = (title: string) =>
+  `${DATA_URL}${encodeURIComponent(title)}.svg`
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [songs, setSongs] = useState<Song[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [shouldPlay, setShouldPlay] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  const currentSong = songs[currentIndex]
+
+  useEffect(() => {
+    fetch(`${DATA_URL}songs.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error('曲データを取得できません')
+        return response.json()
+      })
+      .then((data: Song[]) => {
+        setSongs(data)
+        setLoading(false)
+      })
+      .catch(() => {
+        setError('曲データを読み込めませんでした。通信状態を確認してください。')
+        setLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (shouldPlay && audioRef.current) {
+      audioRef.current.play().catch(() => {
+        setShouldPlay(false)
+        setError('音声を再生できませんでした。')
+      })
+    }
+  }, [currentIndex, shouldPlay])
+
+  const previousSong = () => {
+    setCurrentIndex((index) => (index - 1 + songs.length) % songs.length)
+  }
+
+  const nextSong = () => {
+    setCurrentIndex((index) => (index + 1) % songs.length)
+  }
+
+  const togglePlay = () => {
+    if (shouldPlay) {
+      audioRef.current?.pause()
+      setShouldPlay(false)
+    } else {
+      setError('')
+      setShouldPlay(true)
+    }
+  }
+
+  if (loading) {
+    return <main className="app">曲データを読み込んでいます...</main>
+  }
+
+  if (error && songs.length === 0) {
+    return <main className="app">{error}</main>
+  }
+
+  if (!currentSong) {
+    return <main className="app">曲がありません。</main>
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="app">
+      <header className="header">
+        <h1>Music Box</h1>
+        <p>{songs.length} 曲</p>
+      </header>
+
+      <section className="player">
+        <div className="song-number">
+          {currentIndex + 1} / {songs.length}
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+
+        <h2 className="song-title">{currentSong.title}</h2>
+        <p className="song-info">{currentSong.info}</p>
+
+        {currentSong.begin && (
+          <p className="song-begin">
+            歌い出し：{currentSong.begin}
           </p>
+        )}
+
+        <audio
+          ref={audioRef}
+          src={getAudioUrl(currentSong.title)}
+          onEnded={nextSong}
+          onError={() => setError('音声ファイルを読み込めませんでした。')}
+        />
+
+        <div className="controls">
+          <button onClick={previousSong}>前へ</button>
+          <button onClick={togglePlay} className="play-button">
+            {shouldPlay ? '一時停止' : '再生'}
+          </button>
+          <button onClick={nextSong}>次へ</button>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+
+        {error && <p className="error">{error}</p>}
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+      <section className="score">
+        <h2>楽譜</h2>
+        <img
+          src={getScoreUrl(currentSong.title)}
+          alt={`${currentSong.title}の楽譜`}
+          onError={(event) => {
+            event.currentTarget.style.display = 'none'
+          }}
+        />
       </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </main>
   )
 }
 
