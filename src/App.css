@@ -52,7 +52,7 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 24px;
+  /* margin-top: 24px; */
 }
 
 .controls button {
@@ -82,8 +82,8 @@
 }
 
 .score {
-  border-top: 1px solid var(--border);
-  padding: 24px;
+  /* border-top: 1px solid var(--border); */
+  /* padding: 24px; */
   text-align: center;
 }
 
